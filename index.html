@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trái Tim Đáng Yêu — Click để Mở</title>
+  <style>
+    :root{
+      --bg:#fff7fb;
+      --heart:#ff4d86;
+      --accent:#ffd6e6;
+      --text:#4b2a3a;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{display:flex;align-items:center;justify-content:center;background:var(--bg);color:var(--text);padding:24px}
+
+    .stage{width:100%;max-width:520px;min-height:320px;display:flex;flex-direction:column;align-items:center;gap:18px}
+
+    /* Heart button */
+    .heart-btn{
+      --size:clamp(100px, 24vw, 240px);
+      width:var(--size);height:var(--size);border:0;background:transparent;cursor:pointer;padding:0;
+      display:flex;align-items:center;justify-content:center;position:relative;outline:none
+    }
+    .heart-wrap{width:100%;height:100%;display:grid;place-items:center}
+
+    /* SVG scales responsively */
+    svg{width:84%;height:84%;display:block;transition:transform .45s cubic-bezier(.22,.9,.37,1)}
+
+    /* A little beating animation when closed */
+    .heart-btn:not(.open):hover svg{transform:scale(1.06)}
+    @keyframes beat{0%{transform:scale(1)}25%{transform:scale(1.08)}50%{transform:scale(1)}75%{transform:scale(1.06)}100%{transform:scale(1)}}
+    .heart-btn.pulse:not(.open) svg{animation:beat 1.1s infinite}
+
+    /* Opening animation: split halves move apart */
+    .left, .right{transition:transform .6s cubic-bezier(.25,.8,.3,1)}
+    .inner-left,.inner-right{transition:transform .6s cubic-bezier(.25,.8,.3,1)}
+
+    .heart-btn.open .left{transform:translateX(-22% ) rotate(-12deg)}
+    .heart-btn.open .right{transform:translateX(22%) rotate(12deg)}
+    .heart-btn.open svg{transform:scale(1.06)}
+
+    /* message card */
+    .message{
+      width:100%;max-width:520px;min-height:84px;padding:16px;border-radius:14px;background:linear-gradient(180deg,var(--accent),#fff);box-shadow:0 6px 24px rgba(75,42,58,.12);opacity:0;transform:translateY(8px) scale(.98);transition:opacity .45s ease,transform .45s ease;display:flex;align-items:center;gap:12px
+    }
+    .message.show{opacity:1;transform:translateY(0) scale(1)}
+    .message .emoji{font-size:28px}
+    .message .text{font-size:15px;line-height:1.3}
+
+    /* small helper text */
+    .hint{font-size:13px;color:rgba(75,42,58,.6);text-align:center}
+
+    /* Accessibility focus */
+    .heart-btn:focus{box-shadow:0 0 0 6px rgba(255,77,134,.12);border-radius:10px}
+
+    /* Responsive tweaks */
+    @media (max-width:420px){
+      .stage{gap:12px;padding-top:12px}
+      .message{padding:12px;border-radius:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <button class="heart-btn pulse" id="heartBtn" aria-expanded="false" aria-label="Mở trái tim để xem lời chúc">
+      <div class="heart-wrap" aria-hidden="true">
+        <!-- SVG heart split into left/right groups for animation -->
+        <svg viewBox="0 0 100 90" role="img" xmlns="http://www.w3.org/2000/svg">
+          <g class="left">
+            <path class="inner-left" d="M50 78s-28-18-38-28c-8-8-9-20-2-28C18 8 36 12 44 24c8-12 26-16 42-6 7 5 8 16 1 24-10 11-27 27-35 34z" fill="var(--heart)" />
+          </g>
+          <g class="right">
+            <path class="inner-right" d="M50 78s28-18 38-28c8-8 9-20 2-28C82 8 64 12 56 24c-8-12-26-16-42-6-7 5-8 16-1 24 10 11 27 27 35 34z" fill="var(--heart)" opacity="0" />
+          </g>
+          <!-- top gloss / highlight -->
+          <g style="mix-blend-mode:overlay">
+            <path d="M30 22c6-12 22-14 30-6 8-8 24-6 30 4-6-8-22-8-30 0-8-8-24-10-30- - -" fill="rgba(255,255,255,.12)"/>
+          </g>
+        </svg>
+      </div>
+    </button>
+
+    <div class="message" id="message" role="status" aria-live="polite">
+      <div class="emoji">💌</div>
+      <div class="text" id="messageText">Chúc bạn mỗi ngày đều rạng rỡ, nhận được nhiều yêu thương và tiếng cười! 💖</div>
+    </div>
+
+    <div class="hint">Bấm vào trái tim để mở / chạm nhẹ trên điện thoại</div>
+  </div>
+
+  <script>
+    // Config: thay đổi lời chúc ở đây nếu muốn
+    const defaultMessage = 'Chúc bạn mỗi ngày đều rạng rỡ, nhận được nhiều yêu thương và tiếng cười! 💖';
+
+    const heartBtn = document.getElementById('heartBtn');
+    const message = document.getElementById('message');
+    const messageText = document.getElementById('messageText');
+
+    // Support toggling state and keyboard activation (Enter / Space)
+    function openHeart(){
+      heartBtn.classList.add('open');
+      heartBtn.setAttribute('aria-expanded','true');
+      message.classList.add('show');
+      messageText.textContent = defaultMessage;
+      heartBtn.classList.remove('pulse');
+    }
+    function closeHeart(){
+      heartBtn.classList.remove('open');
+      heartBtn.setAttribute('aria-expanded','false');
+      message.classList.remove('show');
+      heartBtn.classList.add('pulse');
+    }
+    let opened = false;
+
+    heartBtn.addEventListener('click',()=>{
+      opened = !opened;
+      if(opened) openHeart(); else closeHeart();
+    });
+
+    heartBtn.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        heartBtn.click();
+      }
+      // Esc to close
+      if(e.key === 'Escape'){
+        if(opened) {opened=false; closeHeart();}
+      }
+    });
+
+    // Close if user clicks outside
+    document.addEventListener('click', (e)=>{
+      if(!heartBtn.contains(e.target) && !message.contains(e.target) && opened){
+        opened=false; closeHeart();
+      }
+    });
+
+    // Make message customizable via URL param ?msg=...
+    (function applyQueryMessage(){
+      try{
+        const params = new URLSearchParams(location.search);
+        const custom = params.get('msg');
+        if(custom && custom.trim()){
+          messageText.textContent = decodeURIComponent(custom);
+        }
+      }catch(e){/* ignore */}
+    })();
+
+    // Optional: small autoplay open once on first load for a friendly surprise on larger screens
+    if(window.matchMedia('(min-width:600px)').matches){
+      setTimeout(()=>{ if(!opened) {heartBtn.click(); setTimeout(()=>heartBtn.click(),2400);} }, 900);
+    }
+  </script>
+</body>
+</html>
